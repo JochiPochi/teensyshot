@@ -1,9 +1,9 @@
 
 #include <Arduino.h>
-#include "ESCPID/DSHOT.h"
-#include "ESCPID/ESCCMD.h"
+#include "DSHOT.h"
+#include "ESCCMD.h"
 
-#define ESCPID_NB_ESC             2                 // Number of ESCs
+#define ESCPID_NB_ESC             1                 // Number of ESCs
 #define ESCPID_MAX_ESC            6                 // Max number of ESCs
 
 #define ESCPID_COMM_WD_LEVEL      20                // Maximum number of periods without reference refresh
@@ -25,7 +25,7 @@ void setup() {
   ESCCMD_arm_all( );
   
   // Switch 3D mode on
-  ESCCMD_3D_on( );
+  ESCCMD_3D_off( );
 
   // Arming ESCs
   ESCCMD_arm_all( );
@@ -46,14 +46,37 @@ void setup() {
   pinMode(A0, INPUT);
 }
 
+void print_esc_tlm(uint8_t i){
+  uint16_t cmd = 0;
+  int16_t rpm = 0;
+  uint16_t voltage = 0;
+  uint16_t amp = 0;
+  uint8_t temp = 0;
+  ESCCMD_read_cmd(i, &cmd);
+  ESCCMD_read_rpm(i, &rpm);
+  ESCCMD_read_volt(i, &voltage);
+  ESCCMD_read_amp(i, &amp);
+  ESCCMD_read_deg(i, &temp);
+  Serial.print("CMD: ");
+  Serial.print(cmd);
+  Serial.print(" RPM: ");
+  Serial.print(rpm);
+  Serial.print(" V: ");
+  Serial.print(voltage);
+  Serial.print(" A: ");
+  Serial.print(amp);
+  Serial.print(" T: ");
+  Serial.println(temp);
+}
+
 void loop() {
   static int    i, ret;
 
   //Serial.println(analogRead(A0));
-  int16_t myRead = map(analogRead(A0), 400, 1000, 0, 100);
-  if (myRead<0) myRead=0;
-  ESC_Throttle[0] = myRead;
-  ESC_Throttle[1] = myRead;
+  int16_t analog_throttle_read = map(analogRead(A0), 400, 1000, 0, 1999);
+  analog_throttle_read =  constrain(analog_throttle_read, 0, 1999);
+  ESC_Throttle[0] = analog_throttle_read;
+  //ESC_Throttle[1] = myRead;
 
 
   if(true) { //your condition to keep the motors running safely
@@ -71,11 +94,12 @@ void loop() {
 
       if ( ESCPID_comm_wd < ESCPID_COMM_WD_LEVEL ) {
         ret = ESCCMD_throttle( i, ESC_Throttle[i] );
-        Serial.print("Throttling ");
-        Serial.print(i);
-        Serial.print(" at ");
-        Serial.println(ESC_Throttle[i]);
+        //Serial.print("Throttle ");
+        //Serial.print(i);
+        //Serial.print(" at ");
+        //Serial.println(ESC_Throttle[i]);
       }
+      print_esc_tlm(i);
     }
     
     // Update watchdog

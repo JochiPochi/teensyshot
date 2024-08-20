@@ -263,7 +263,7 @@ void DSHOT_init( int n ) {
   // PORT_PCR_DSE: high current output
   // PORT_PCR_SRE: slow slew rate
   for ( i = 0; i < DSHOT_n; i++ ) {
-    *DSHOT_DMA_pin_teensy[i] = PORT_PCR_MUX(4) | PORT_PCR_DSE | PORT_PCR_SRE;
+    *DSHOT_DMA_pin_teensy[i] = PORT_PCR_MUX(4) | PORT_PCR_DSE | PORT_PCR_SRE | PORT_PCR_PE | PORT_PCR_PS;
   }
 
   // First DMA channel is the only one triggered by the bit clock
@@ -287,7 +287,7 @@ void DSHOT_init( int n ) {
   // FTM_CSC_MSB | FTM_CSC_ELSB:
   // edge aligned PWM with high-true pulses
   for ( i = 0; i < DSHOT_n; i++ ) {
-    *DSHOT_DMA_chsc_teensy[i] = FTM_CSC_MSB | FTM_CSC_ELSB;
+    *DSHOT_DMA_chsc_teensy[i] = FTM_CSC_MSB | ~FTM_CSC_ELSB;
   }
 
   // FTM0_CNV = 0: initialize the counter channel N at 0
@@ -337,7 +337,7 @@ int DSHOT_send( uint16_t *cmd, uint8_t *tlm ) {
     // 12th MSB = telemetry request
     // 4 LSB = CRC
     data = ( cmd[i] << 5 ) | ( tlm[i] << 4 );
-    data |= ( ( data >> 4 ) ^ ( data >> 8 ) ^ ( data >> 12 ) ) & 0x0f;
+    data |= ( ~( ( data >> 4 ) ^ ( data >> 8 ) ^ ( data >> 12 ) ) ) & 0x0f;
 
     // Generate DSHOT timings corresponding to the packet
     for ( j = 0; j < DSHOT_DSHOT_LENGTH; j++ )  {
